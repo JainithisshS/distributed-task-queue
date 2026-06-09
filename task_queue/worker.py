@@ -35,6 +35,10 @@ def process_job(job: Job) -> None:
     For demonstration, simulates work by sleeping. In production,
     this would call the actual user-defined task function.
     
+    Special payload flags:
+        fail=True  — raise an exception (for retry/DLQ tests)
+        noop=True  — return immediately (for benchmarking system overhead)
+        
     Args:
         job: Job object to process
         
@@ -42,6 +46,10 @@ def process_job(job: Job) -> None:
         Exception: If job payload contains fail=True (for testing)
     """
     logger = get_logger(f"process_job")
+    
+    # Noop mode: return immediately (used by benchmark --real)
+    if job.payload.get("noop"):
+        return
     
     # Simulate work
     sleep_duration = random.uniform(0.5, 2.0)
@@ -156,7 +164,14 @@ def run_worker(worker_id: int) -> None:
             # When running in a non-main thread (e.g., tests), fallback to
             # a thread-join timeout approach because signals aren't allowed.
             try:
-                if threading.current_thread() is threading.main_thread():
+                # SIGALRM only available on Unix. On Windows (or non-main threads),
+                # fall back to thread-join timeout which works on all platforms.
+                use_sigalrm = (
+                    threading.current_thread() is threading.main_thread()
+                    and hasattr(signal, "SIGALRM")
+                )
+
+                if use_sigalrm:
                     signal.signal(signal.SIGALRM, _timeout_handler)
                     signal.alarm(job.timeout_seconds)
                     try:

@@ -1,0 +1,10 @@
+venv/
+venv_wsl/
+venv*/
+app.log
+.cache/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+.DS_Store

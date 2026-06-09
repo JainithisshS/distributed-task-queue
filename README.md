@@ -233,6 +233,29 @@ pytest --cov=task_queue --cov-report=term-missing tests/
 
 ---
 
+## Benchmarks
+
+Measured on a local machine using `tools/benchmark.py` (fakeredis, in-process — pure broker overhead, no network).
+
+| Metric | Result |
+|---|---|
+| Enqueue throughput | **~2,400 jobs/sec** (single-threaded) |
+| Dequeue throughput | **~3,800 jobs/sec** (single-threaded) |
+| Concurrent enqueue throughput | **~1,700 jobs/sec** (4 threads, 10K jobs) |
+| Round-trip broker latency p50 | **< 1 ms** |
+| Round-trip broker latency p99 | **< 1 ms** |
+| Priority ordering correctness | **500/500 high-priority jobs** drained before first low-priority job |
+| Concurrent errors | **0** across 10,000 jobs on 4 threads |
+
+Run the benchmark yourself:
+```bash
+python tools/benchmark.py
+```
+
+> Numbers represent broker layer performance (Redis enqueue/dequeue). End-to-end job throughput is bounded by worker count and task execution time.
+
+---
+
 ## Configuration
 
 | Environment Variable | Default | Description |
